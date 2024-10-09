@@ -47,16 +47,8 @@ async function run() {
         res.status(500).json({ message: 'Failed to add product', error });
       }
     });
-    // add product table api's here:
-    // app.get("/products", async (req, res) => {
-    //   try {
-    //     const products = await productCollections.find({}).toArray();
-    //     res.status(200).json(products);
-    //   } catch (error) {
-    //     res.status(500).json({ error: "Failed to fetch products" });
-    //   }
-    // });
 
+// Fetch products for table data show.
     app.get("/products", async (req, res) => {
       try {
         // Fetch products and sort them by creationDate in descending order
@@ -64,6 +56,23 @@ async function run() {
         res.status(200).json(products);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products" });
+      }
+    });
+
+    // product table data delete api's here.
+    app.delete("/products/:id", async (req, res) => {
+      const productId = req.params.id;
+      
+      try {
+        const result = await productCollections.deleteOne({ _id: new ObjectId(productId) });
+        
+        if (result.deletedCount === 1) {
+          res.json({ message: "Product deleted successfully" });
+        } else {
+          res.status(404).json({ message: "Product not found" });
+        }
+      } catch (error) {
+        res.status(500).json({ message: "Error deleting product", error });
       }
     });
 
