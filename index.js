@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config();
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000
 
 app.use(cors());
@@ -48,7 +48,7 @@ async function run() {
       }
     });
 
-// Fetch products for table data show.
+    // Fetch products for table data show.
     app.get("/products", async (req, res) => {
       try {
         // Fetch products and sort them by creationDate in descending order
@@ -62,10 +62,11 @@ async function run() {
     // product table data delete api's here.
     app.delete("/products/:id", async (req, res) => {
       const productId = req.params.id;
-      
+      // console.log(productId)
+
       try {
         const result = await productCollections.deleteOne({ _id: new ObjectId(productId) });
-        
+
         if (result.deletedCount === 1) {
           res.json({ message: "Product deleted successfully" });
         } else {
@@ -75,7 +76,44 @@ async function run() {
         res.status(500).json({ message: "Error deleting product", error });
       }
     });
+    // get products from update route by ID api's here:
+    app.get("/products/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const product = await productCollections.findOne({ _id: new ObjectId(id) });
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+        res.json(product);
+      } catch (error) {
+        res.status(500).json({ message: "Error fetching product", error });
+      }
+    });
+    // update products by ID api's here:
+    app.put("/products/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const updatedData = req.body;
 
+        // Remove undefined fields (like optional image URL)
+        Object.keys(updatedData).forEach((key) => {
+          if (updatedData[key] === undefined) delete updatedData[key];
+        });
+
+        const result = await productCollections.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedData }
+        );
+
+        if (result.modifiedCount === 0) {
+          return res.status(404).json({ message: "Product not found or no changes made" });
+        }
+
+        res.json({ message: "Product updated successfully" });
+      } catch (error) {
+        res.status(500).json({ message: "Error updating product", error });
+      }
+    });
 
 
   } finally {
