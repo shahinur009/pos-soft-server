@@ -114,6 +114,27 @@ async function run() {
         res.status(500).json({ message: "Error updating product", error });
       }
     });
+    // All products show api here.(report)
+    app.get("/products-report", async (req, res) => {
+      const { category } = req.query; // Get the category from query params
+
+      try {
+        let query = {}; // Default empty query
+
+        // If category is provided, filter by category
+        if (category) {
+          query.productCategory = category;
+        }
+
+        const products = await productCollections.find(query).toArray(); // Fetch products based on query
+        res.json(products);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).send("Server Error");
+      }
+    });
+
+
 
 
   } finally {
