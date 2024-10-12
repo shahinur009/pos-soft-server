@@ -25,6 +25,7 @@ async function run() {
   try {
     const userCollections = client.db('pos-soft').collection('users');
     const productCollections = client.db('pos-soft').collection('products');
+    const customerCollections = client.db('pos-soft').collection('customers');
 
     // get users from db
     app.get('/users', async (req, res) => {
@@ -131,6 +132,52 @@ async function run() {
       } catch (error) {
         console.error("Error fetching products:", error);
         res.status(500).send("Server Error");
+      }
+    });
+
+    // Add Customer route here:
+    app.post('/add-customer', async (req, res) => {
+      try {
+        const customerData = {
+          ...req.body,
+          creationDate: new Date(), // Add current date as creation date
+        };
+        // Insert the Customer data into the "customer" collection
+        const result = await customerCollections.insertOne(customerData);
+
+        res.status(201).json({ message: 'Customer added successfully', productId: result.insertedId });
+      } catch (error) {
+        console.error('Error adding customer:', error);
+        res.status(500).json({ message: 'Failed to add customer', error });
+      }
+    });
+
+    // Fetch customers for table data show.
+    app.get("/customers", async (req, res) => {
+      try {
+        // Fetch customers and sort them by creationDate in descending order
+        const customers = await customerCollections.find({}).sort({ creationDate: -1 }).toArray();
+        res.status(200).json(customers);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch customers" });
+      }
+    });
+
+    // product table data delete api's here.
+    app.delete("/customers/:id", async (req, res) => {
+      const customer = req.params.id;
+      // console.log(productId)
+
+      try {
+        const result = await customerCollections.deleteOne({ _id: new ObjectId(customer) });
+
+        if (result.deletedCount === 1) {
+          res.json({ message: "customer deleted successfully" });
+        } else {
+          res.status(404).json({ message: "customer not found" });
+        }
+      } catch (error) {
+        res.status(500).json({ message: "Error deleting customer", error });
       }
     });
 
