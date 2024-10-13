@@ -162,6 +162,16 @@ async function run() {
         res.status(500).json({ error: "Failed to fetch customers" });
       }
     });
+    // Fetch product info for table data show.
+    app.get("/product-info", async (req, res) => {
+      try {
+        // Fetch customers and sort them by creationDate in descending order
+        const products = await productCollections.find({}).sort({ creationDate: -1 }).toArray();
+        res.status(200).json(products);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch products info" });
+      }
+    });
 
     // product table data delete api's here.
     app.delete("/customers/:id", async (req, res) => {
