@@ -26,6 +26,7 @@ async function run() {
     const userCollections = client.db('pos-soft').collection('users');
     const productCollections = client.db('pos-soft').collection('products');
     const customerCollections = client.db('pos-soft').collection('customers');
+    const salesCollections = client.db('pos-soft').collection('sales');
 
     // get users from db
     app.get('/users', async (req, res) => {
@@ -191,7 +192,22 @@ async function run() {
       }
     });
 
+    // Post sales info route here:
+    app.post('/sales', async (req, res) => {
+      try {
+        const salesData = {
+          ...req.body,
+          creationDate: new Date(), // Add current date as creation date
+        };
+        // Insert the Customer data into the "customer" collection
+        const result = await salesCollections.insertOne(salesData);
 
+        res.status(201).json({ message: 'sales info added successfully', productId: result.insertedId });
+      } catch (error) {
+        console.error('Error adding sales info:', error);
+        res.status(500).json({ message: 'Failed to sales info', error });
+      }
+    });
 
 
 
