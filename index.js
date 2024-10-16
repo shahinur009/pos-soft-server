@@ -209,6 +209,26 @@ async function run() {
       }
     });
 
+    // Fetch customers info for table data show.
+    app.get("/customers-info", async (req, res) => {
+      try {
+        // Fetch customers and sort them by creationDate in descending order
+        const products = await customerCollections.find({}).sort({ creationDate: -1 }).toArray();
+        res.status(200).json(products);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch products info" });
+      }
+    });
+    // Fetch all sales info for table data show.
+    app.get("/all-sales-data", async (req, res) => {
+      try {
+        // Fetch customers and sort them by creationDate in descending order
+        const products = await salesCollections.findOne();
+        res.status(200).json(products);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch products info" });
+      }
+    });
 
 
 
