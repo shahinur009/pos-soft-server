@@ -213,17 +213,18 @@ async function run() {
     app.get("/customers-info", async (req, res) => {
       try {
         // Fetch customers and sort them by creationDate in descending order
-        const products = await customerCollections.find({}).sort({ creationDate: -1 }).toArray();
+        const products = await salesCollections.find({}).sort({ creationDate: -1 }).toArray();
         res.status(200).json(products);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products info" });
       }
     });
     // Fetch all sales info for table data show.
-    app.get("/all-sales-data", async (req, res) => {
+    app.get("/all-sales-data/:id", async (req, res) => {
       try {
+        const query = req.params
         // Fetch customers and sort them by creationDate in descending order
-        const products = await salesCollections.findOne();
+        const products = await salesCollections.findOne({ _id: new ObjectId(query) });
         res.status(200).json(products);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products info" });
