@@ -137,30 +137,15 @@ async function run() {
     });
 
     // Add Customer route here:
-    // app.post('/add-customer', async (req, res) => {
-    //   try {
-    //     const customerData = {
-    //       ...req.body,
-    //       creationDate: new Date(), // Add current date as creation date
-    //     };
-    //     // Insert the Customer data into the "customer" collection
-    //     const result = await customerCollections.insertOne(customerData);
-
-    //     res.status(201).json({ message: 'Customer added successfully', productId: result.insertedId });
-    //   } catch (error) {
-    //     console.error('Error adding customer:', error);
-    //     res.status(500).json({ message: 'Failed to add customer', error });
-    //   }
-    // });
     app.post('/add-customer', async (req, res) => {
       try {
         const { customerName, mobile } = req.body;
-            const existingCustomer = await customerCollections.findOne({ customerName, mobile });
-    
+        const existingCustomer = await customerCollections.findOne({ customerName, mobile });
+
         if (existingCustomer) {
           const updateResult = await customerCollections.updateOne(
             { customerName, mobile },
-            { $set: { ...req.body, updateDate: new Date() } } 
+            { $set: { ...req.body, updateDate: new Date() } }
           );
           res.status(200).json({ message: 'Customer data updated successfully', updatedCustomer: updateResult });
         } else {
@@ -175,7 +160,7 @@ async function run() {
         console.error('Error adding/updating customer:', error);
         res.status(500).json({ message: 'Failed to add or update customer', error });
       }
-    });   
+    });
 
     // Fetch customers for table data show.
     app.get("/customers", async (req, res) => {
@@ -217,21 +202,88 @@ async function run() {
     });
 
     // Post sales info route here:
+    // app.post('/sales', async (req, res) => {
+    //   try {
+    //     const { customerName, mobile, products } = req.body;
+
+    //     // Check if a customer with the same name and mobile already exists
+    //     const existingCustomer = await salesCollections.findOne({ customerName, mobile });
+
+    //     if (existingCustomer) {
+    //       // If customer exists, update the products array by adding new products
+    //       const updatedProducts = [...existingCustomer.products, ...products]; // Merge existing products with new products
+
+    //       const updateResult = await salesCollections.updateOne(
+    //         { customerName, mobile }, // Query to find the existing customer
+    //         {
+    //           $set: {
+    //             products: updatedProducts, // Update the products array
+    //             updatedDate: new Date(), // Optional: Update the date if you want to track last updated
+    //           },
+    //         }
+    //       );
+
+    //       res.status(200).json({ message: 'Customer sales info updated successfully', productId: existingCustomer._id });
+    //     } else {
+    //       // If customer doesn't exist, create a new entry
+    //       const salesData = {
+    //         ...req.body,
+    //         creationDate: new Date(), // Add current date as creation date
+    //       };
+
+    //       const result = await salesCollections.insertOne(salesData);
+
+    //       res.status(201).json({ message: 'Sales info added successfully', productId: result.insertedId });
+    //     }
+    //   } catch (error) {
+    //     console.error('Error adding/updating sales info:', error);
+    //     res.status(500).json({ message: 'Failed to add/update sales info', error });
+    //   }
+    // });
     app.post('/sales', async (req, res) => {
       try {
-        const salesData = {
-          ...req.body,
-          creationDate: new Date(), // Add current date as creation date
-        };
-        // Insert the Customer data into the "customer" collection
-        const result = await salesCollections.insertOne(salesData);
+        const { customerName, mobile, products, due } = req.body;
 
-        res.status(201).json({ message: 'sales info added successfully', productId: result.insertedId });
+        // Check if a customer with the same name and mobile already exists
+        const existingCustomer = await salesCollections.findOne({ customerName, mobile });
+
+        if (existingCustomer) {
+          // If customer exists, merge products and update due
+          const updatedProducts = [...existingCustomer.products, ...products]; // Merge existing products with new products
+
+          // Merge previous due with new due
+          const updatedDue = existingCustomer.due + due;
+
+          const updateResult = await salesCollections.updateOne(
+            { customerName, mobile }, // Query to find the existing customer
+            {
+              $set: {
+                products: updatedProducts, // Update the products array
+                due: updatedDue, // Update the due
+                updatedDate: new Date(), // Optional: Update the date if you want to track last updated
+              },
+            }
+          );
+
+          res.status(200).json({ message: 'Customer sales info updated successfully', productId: existingCustomer._id });
+        } else {
+          // If customer doesn't exist, create a new entry
+          const salesData = {
+            ...req.body,
+            creationDate: new Date(), // Add current date as creation date
+          };
+
+          const result = await salesCollections.insertOne(salesData);
+
+          res.status(201).json({ message: 'Sales info added successfully', productId: result.insertedId });
+        }
       } catch (error) {
-        console.error('Error adding sales info:', error);
-        res.status(500).json({ message: 'Failed to sales info', error });
+        console.error('Error adding/updating sales info:', error);
+        res.status(500).json({ message: 'Failed to add/update sales info', error });
       }
     });
+
+
 
     // Fetch customers info for table data show.
     app.get("/customers-info", async (req, res) => {
