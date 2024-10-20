@@ -137,21 +137,45 @@ async function run() {
     });
 
     // Add Customer route here:
+    // app.post('/add-customer', async (req, res) => {
+    //   try {
+    //     const customerData = {
+    //       ...req.body,
+    //       creationDate: new Date(), // Add current date as creation date
+    //     };
+    //     // Insert the Customer data into the "customer" collection
+    //     const result = await customerCollections.insertOne(customerData);
+
+    //     res.status(201).json({ message: 'Customer added successfully', productId: result.insertedId });
+    //   } catch (error) {
+    //     console.error('Error adding customer:', error);
+    //     res.status(500).json({ message: 'Failed to add customer', error });
+    //   }
+    // });
     app.post('/add-customer', async (req, res) => {
       try {
-        const customerData = {
-          ...req.body,
-          creationDate: new Date(), // Add current date as creation date
-        };
-        // Insert the Customer data into the "customer" collection
-        const result = await customerCollections.insertOne(customerData);
-
-        res.status(201).json({ message: 'Customer added successfully', productId: result.insertedId });
+        const { customerName, mobile } = req.body;
+            const existingCustomer = await customerCollections.findOne({ customerName, mobile });
+    
+        if (existingCustomer) {
+          const updateResult = await customerCollections.updateOne(
+            { customerName, mobile },
+            { $set: { ...req.body, updateDate: new Date() } } 
+          );
+          res.status(200).json({ message: 'Customer data updated successfully', updatedCustomer: updateResult });
+        } else {
+          const customerData = {
+            ...req.body,
+            creationDate: new Date(),
+          };
+          const result = await customerCollections.insertOne(customerData);
+          res.status(201).json({ message: 'Customer added successfully', productId: result.insertedId });
+        }
       } catch (error) {
-        console.error('Error adding customer:', error);
-        res.status(500).json({ message: 'Failed to add customer', error });
+        console.error('Error adding/updating customer:', error);
+        res.status(500).json({ message: 'Failed to add or update customer', error });
       }
-    });
+    });   
 
     // Fetch customers for table data show.
     app.get("/customers", async (req, res) => {
