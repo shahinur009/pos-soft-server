@@ -27,6 +27,7 @@ async function run() {
     const productCollections = client.db('pos-soft').collection('products');
     const customerCollections = client.db('pos-soft').collection('customers');
     const salesCollections = client.db('pos-soft').collection('sales');
+    const productsBuyCollections = client.db('pos-soft').collection('buy-products');
 
     // get users from db
     app.get('/users', async (req, res) => {
@@ -306,6 +307,22 @@ async function run() {
         res.status(500).json({ error: "Failed to fetch products info" });
       }
     });
+
+    // buys products info
+    app.post('/company-products', async (req, res) => {
+      try {
+        const productsBuy = req.body;
+        console.log(productsBuy);
+
+        const result = await productsBuyCollections.insertOne(productsBuy);
+        
+        res.status(201).json({
+          message: 'Data inserted successfully', result});
+      } catch (error) {
+        console.error('Error inserting data:', error);
+        res.status(500).json({ error: 'Failed to insert data' });
+      } 
+    }); 
 
 
 
