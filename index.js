@@ -10,6 +10,9 @@ app.use(cors());
 app.use(express.json());
 
 
+//const uri = "mongodb://localhost:27017"
+//console.log(uri);
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.6ypdnj9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -27,7 +30,7 @@ async function run() {
     const productCollections = client.db('pos-soft').collection('products');
     const customerCollections = client.db('pos-soft').collection('customers');
     const salesCollections = client.db('pos-soft').collection('sales');
-    const productsBuyCollections = client.db('pos-soft').collection('buy-products');
+    const productsBuyCollections = client.db('pos-soft').collection('productsBuy');
 
     // get users from db
     app.get('/users', async (req, res) => {
@@ -184,6 +187,29 @@ async function run() {
       }
     });
 
+    //  stock qty change api here
+    app.put("/product-info/:id", async (req, res) => {
+      const { id } = req.params;
+      const { newStock } = req.body;
+
+      try {
+        const result = await productCollections.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { productQty: newStock } }
+        );
+
+        if (result.modifiedCount > 0) {
+          res.status(200).json({ message: "Product stock updated successfully" });
+        } else {
+          res.status(404).json({ message: "Product not found or no changes made" });
+        }
+      } catch (error) {
+        console.error("Error updating product stock:", error);
+        res.status(500).json({ error: "Failed to update product stock" });
+      }
+    });
+
+
     // product table data delete api's here.
     app.delete("/customers/:id", async (req, res) => {
       const customer = req.params.id;
@@ -202,76 +228,34 @@ async function run() {
       }
     });
 
-    // Post sales info route here:
-    // app.post('/sales', async (req, res) => {
-    //   try {
-    //     const { customerName, mobile, products } = req.body;
-
-    //     // Check if a customer with the same name and mobile already exists
-    //     const existingCustomer = await salesCollections.findOne({ customerName, mobile });
-
-    //     if (existingCustomer) {
-    //       // If customer exists, update the products array by adding new products
-    //       const updatedProducts = [...existingCustomer.products, ...products]; // Merge existing products with new products
-
-    //       const updateResult = await salesCollections.updateOne(
-    //         { customerName, mobile }, // Query to find the existing customer
-    //         {
-    //           $set: {
-    //             products: updatedProducts, // Update the products array
-    //             updatedDate: new Date(), // Optional: Update the date if you want to track last updated
-    //           },
-    //         }
-    //       );
-
-    //       res.status(200).json({ message: 'Customer sales info updated successfully', productId: existingCustomer._id });
-    //     } else {
-    //       // If customer doesn't exist, create a new entry
-    //       const salesData = {
-    //         ...req.body,
-    //         creationDate: new Date(), // Add current date as creation date
-    //       };
-
-    //       const result = await salesCollections.insertOne(salesData);
-
-    //       res.status(201).json({ message: 'Sales info added successfully', productId: result.insertedId });
-    //     }
-    //   } catch (error) {
-    //     console.error('Error adding/updating sales info:', error);
-    //     res.status(500).json({ message: 'Failed to add/update sales info', error });
-    //   }
-    // });
+  //  sales data api here
     app.post('/sales', async (req, res) => {
       try {
         const { customerName, mobile, products, due } = req.body;
 
-        // Check if a customer with the same name and mobile already exists
         const existingCustomer = await salesCollections.findOne({ customerName, mobile });
 
         if (existingCustomer) {
-          // If customer exists, merge products and update due
-          const updatedProducts = [...existingCustomer.products, ...products]; // Merge existing products with new products
+          const updatedProducts = [...existingCustomer.products, ...products]; 
 
-          // Merge previous due with new due
           const updatedDue = existingCustomer.due + due;
 
           const updateResult = await salesCollections.updateOne(
-            { customerName, mobile }, // Query to find the existing customer
+            { customerName, mobile }, 
             {
               $set: {
-                products: updatedProducts, // Update the products array
-                due: updatedDue, // Update the due
-                updatedDate: new Date(), // Optional: Update the date if you want to track last updated
+                products: updatedProducts,
+                due: updatedDue, 
+                updatedDate: new Date(), 
               },
             }
           );
 
           res.status(200).json({ message: 'Customer sales info updated successfully', productId: existingCustomer._id });
         } else {
-          // If customer doesn't exist, create a new entry
           const salesData = {
             ...req.body,
-            creationDate: new Date(), // Add current date as creation date
+            creationDate: new Date(), 
           };
 
           const result = await salesCollections.insertOne(salesData);
@@ -289,18 +273,17 @@ async function run() {
     // Fetch customers info for table data show.
     app.get("/customers-info", async (req, res) => {
       try {
-        // Fetch customers and sort them by creationDate in descending order
         const products = await salesCollections.find({}).sort({ creationDate: -1 }).toArray();
         res.status(200).json(products);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products info" });
       }
     });
+
     // Fetch all sales info for table data show.
     app.get("/all-sales-data/:id", async (req, res) => {
       try {
         const query = req.params
-        // Fetch customers and sort them by creationDate in descending order
         const products = await salesCollections.findOne({ _id: new ObjectId(query) });
         res.status(200).json(products);
       } catch (error) {
@@ -308,21 +291,74 @@ async function run() {
       }
     });
 
-    // buys products info
+    // create products
     app.post('/company-products', async (req, res) => {
       try {
         const productsBuy = req.body;
         console.log(productsBuy);
 
         const result = await productsBuyCollections.insertOne(productsBuy);
-        
+
         res.status(201).json({
-          message: 'Data inserted successfully', result});
+          message: 'Data inserted successfully', result
+        });
       } catch (error) {
         console.error('Error inserting data:', error);
         res.status(500).json({ error: 'Failed to insert data' });
-      } 
-    }); 
+      }
+    });
+
+    // purchase report show 
+    app.get('/purchase-report', async (req, res) => {
+      try {
+        // Fetch all purchase data
+        const purchases = await productsBuyCollections.find({}).toArray();
+
+        // Process the data and calculate 'বাকি'
+        const purchaseReport = purchases.map((purchase, index) => ({
+          id: purchase._id,
+          index: index + 1,
+          companyName: purchase.companyDetails.companyName,
+          payableMoney: purchase.companyDetails.payableMoney,
+          moneyGiven: purchase.companyDetails.moneyGiven,
+          remaining: purchase.companyDetails.payableMoney - purchase.companyDetails.moneyGiven,
+        }));
+
+        // Send the processed data back as JSON
+        res.json(purchaseReport);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+
+    // single data 
+    app.get('/single-product-report/:id', async (req, res) => {
+      try {
+        const { id } = req.params;
+        const data = await productsBuyCollections.findOne({ _id: new ObjectId(id) })
+        res.status(200).send(data)
+      } catch (error) {
+        res.json({ messages: "have data send problems" });
+      }
+    })
+
+    app.put("/customers/:id", async (req, res) => {
+      const { id } = req.params;
+      const due = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+
+      const updatedUser = {
+        $set: {
+          totalDue: due.remainAmount
+        }
+      }
+      console.log(due)
+
+      const result = await customerCollections.updateOne(filter, updatedUser, options);
+
+    });
 
 
 
